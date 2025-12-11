@@ -1,0 +1,23 @@
+{
+  "sonicTestnet": {
+    "chainId": 14601,
+    "name": "Sonic Testnet",
+    "rpcUrl": "https://rpc.testnet.soniclabs.com",
+    "explorerUrl": "https://testnet.sonicscan.org",
+    "explorerApiUrl": "https://api.etherscan.io/v2/api?chainid=14601",
+    "currencySymbol": "S",
+    "faucetUrl": "https://testnet.soniclabs.com/account",
+    "blockTime": 2,
+    "nativeCurrency": {
+      "name": "Sonic",
+      "symbol": "S",
+      "decimals": 18
+    },
+    "bundler": {
+      "minBalance": "0.1",
+      "maxBundleGas": 10000000,
+      "maxUserOpsPerBundle": 10,
+      "bundleInterval": 15000
+    }
+  }
+}

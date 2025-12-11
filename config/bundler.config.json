@@ -1,0 +1,44 @@
+{
+  "rpc": {
+    "port": 3000,
+    "host": "0.0.0.0",
+    "cors": true,
+    "rateLimit": {
+      "windowMs": 60000,
+      "max": 100
+    }
+  },
+  "database": {
+    "path": "./bundler.db",
+    "migrationsPath": "./migrations"
+  },
+  "mempool": {
+    "maxSize": 10000,
+    "cleanupInterval": 60000,
+    "maxAge": 3600000
+  },
+  "bundling": {
+    "interval": 15000,
+    "maxGasPerBundle": 10000000,
+    "maxOpsPerBundle": 10,
+    "minOpsForBundle": 1,
+    "maxPendingBundles": 5
+  },
+  "gas": {
+    "estimationMultiplier": 1.2,
+    "maxFeePerGasMultiplier": 1.5,
+    "priorityFeePercentile": 50,
+    "updateInterval": 15000
+  },
+  "monitoring": {
+    "metrics": true,
+    "healthChecks": true,
+    "alerting": true
+  },
+  "security": {
+    "requireSignature": true,
+    "validatePaymaster": true,
+    "validateNonce": true,
+    "maxVerificationGas": 3000000
+  }
+}

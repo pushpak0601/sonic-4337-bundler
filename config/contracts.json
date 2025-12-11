@@ -1,0 +1,10 @@
+{
+  "sonicTestnet": {
+    "entryPoint": "0xD8d429fe93230Ac840C1eE3ddE76F15C6A265538",
+    "accountFactory": "0xB66a9967ddB57031Db106721123bBdeF7126d6A2",
+    "accountImplementation": "0x373cbD35e6eb8707bcB7759c3E5a0B4ebDC65Bbe",
+    "paymaster": "0xD4E295c5f47581D868e87A70b9c1122d68187701",
+    "creatorRegistry": "0xcE15C8A3AE043F3137608eb09BC1F6832Cb4F352",
+    "userProfile": "0x69c12189d69A8cA15EE1169b06814FC64Aab39f8"
+  }
+}
