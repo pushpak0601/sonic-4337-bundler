@@ -12,7 +12,7 @@ const RPC_URL = process.env.SONIC_RPC_URL || 'https://rpc.testnet.soniclabs.com'
 const ENTRY_POINT_ADDRESS = process.env.ENTRY_POINT_ADDRESS || '0xD8d429fe93230Ac840C1eE3ddE76F15C6A265538';
 const PRIVATE_KEY = process.env.BUNDLER_PRIVATE_KEY || '';
 const BENEFICIARY = process.env.BENEFICIARY || (PRIVATE_KEY ? new ethers.Wallet(PRIVATE_KEY).address : '0x0000000000000000000000000000000000000000');
-const PORT = parseInt(process.env.PORT || '3000');
+const PORT = parseInt(process.env.PORT || '4337');
 const BUNDLE_INTERVAL_MS = parseInt(process.env.BUNDLE_INTERVAL_MS || '15000');
 const DATABASE_PATH = process.env.DATABASE_PATH || './bundler.db';
 

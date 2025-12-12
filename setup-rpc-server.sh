@@ -1,3 +1,7 @@
+# 3. Create eth_sendUserOperation.ts if not exists
+if [ ! -f "src/rpc/methods/eth_sendUserOperation.ts" ]; then
+    echo "Creating eth_sendUserOperation.ts..."
+    cat > src/rpc/methods/eth_sendUserOperation.ts << 'SENDUOP_EOF'
 import { UserOperationValidator } from '../../validation/UserOperationValidator';
 import { MempoolManager } from '../../mempool/MempoolManager';
 import { MetricsCollector } from '../../monitoring/MetricsCollector';
@@ -41,7 +45,7 @@ export class SendUserOperationMethod {
                 
                 throw {
                     code: -32500,
-                    message: `Unsupported EntryPoint. Expected: ${this.entryPointAddress}, Received: ${entryPoint}`
+                    message: \`Unsupported EntryPoint. Expected: \${this.entryPointAddress}, Received: \${entryPoint}\`
                 };
             }
 
@@ -79,7 +83,7 @@ export class SendUserOperationMethod {
             throw error;
         } finally {
             const duration = Date.now() - startTime;
-            console.log(`⏱️ eth_sendUserOperation executed in ${duration}ms`);
+            console.log(\`⏱️ eth_sendUserOperation executed in \${duration}ms\`);
         }
     }
 
@@ -126,14 +130,14 @@ export class SendUserOperationMethod {
 
         if (isAddress) {
             strValue = strValue.padStart(40, '0').slice(0, 40);
-            return `0x${strValue.toLowerCase()}`;
+            return \`0x\${strValue.toLowerCase()}\`;
         }
 
         if (strValue.length % 2 !== 0) {
             strValue = '0' + strValue;
         }
 
-        return `0x${strValue.toLowerCase()}`;
+        return \`0x\${strValue.toLowerCase()}\`;
     }
 
     async estimateGas(params: any[]): Promise<any> {
@@ -150,7 +154,7 @@ export class SendUserOperationMethod {
             if (entryPoint.toLowerCase() !== this.entryPointAddress.toLowerCase()) {
                 throw {
                     code: -32500,
-                    message: `Unsupported EntryPoint. Supported: ${this.entryPointAddress}`
+                    message: \`Unsupported EntryPoint. Supported: \${this.entryPointAddress}\`
                 };
             }
 
@@ -170,3 +174,5 @@ export class SendUserOperationMethod {
         }
     }
 }
+SENDUOP_EOF
+fi

@@ -99,14 +99,14 @@ echo $BUNDLER_PID > "$PID_FILE"
 
 echo "✅ Bundler started with PID: $BUNDLER_PID"
 echo "📝 Logs: $LOG_FILE"
-echo "🌐 RPC: http://localhost:3000"
-echo "🏥 Health: http://localhost:3000/health"
+echo "🌐 RPC: http://localhost:4337"
+echo "🏥 Health: http://localhost:4337/health"
 echo "📊 Metrics: http://localhost:9091/metrics"
 
 # Monitor startup
 echo -n "⏳ Waiting for bundler to be ready"
 for i in {1..30}; do
-  if curl -s http://localhost:3000/health > /dev/null; then
+  if curl -s http://localhost:4337/health > /dev/null; then
     echo ""
     echo "✅ Bundler is ready and healthy!"
     break
@@ -131,6 +131,6 @@ echo "   ./monitor-bundler.sh       - Monitor performance"
 echo "   tail -f $LOG_FILE   - View logs"
 echo ""
 echo "🔗 Integration:"
-echo "   Update your frontend to use: http://localhost:3000"
+echo "   Update your frontend to use: http://localhost:4337"
 echo ""
 exit 0

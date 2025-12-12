@@ -2,85 +2,25 @@ version: '3.8'
 
 services:
   bundler:
-    build: .
+    build:
+      context: ..          # Look for Dockerfile in parent directory
+      dockerfile: docker/Dockerfile  # But use this Dockerfile
     container_name: sonic-bundler
     ports:
-      - "3000:3000"   # RPC endpoint
-      - "9091:9091"   # Metrics
-      - "8080:8080"   # Health checks
+      - "3000:3000"
+      - "9091:9091"
     environment:
       - NODE_ENV=production
-      - LOG_LEVEL=info
     env_file:
-      - .env
+      - ../.env           # .env is in parent directory
     volumes:
-      - ./data:/app/data
-      - ./logs:/app/logs
-      - ./backups:/app/backups
+      - ../data:/app/data      # Data volume in parent
+      - ../logs:/app/logs      # Logs in parent
+      - ../config:/app/config  # Config in parent
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
-
-  # Monitoring stack
-  prometheus:
-    image: prom/prometheus:latest
-    container_name: sonic-prometheus
-    ports:
-      - "9090:9090"
-    volumes:
-      - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
-      - prometheus_data:/prometheus
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-      - '--web.console.libraries=/etc/prometheus/console_libraries'
-      - '--web.console.templates=/etc/prometheus/console_templates'
-      - '--storage.tsdb.retention.time=200h'
-      - '--web.enable-lifecycle'
-    restart: unless-stopped
-
-  grafana:
-    image: grafana/grafana:latest
-    container_name: sonic-grafana
-    ports:
-      - "3001:3000"
-    environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin
-      - GF_INSTALL_PLUGINS=grafana-piechart-panel
-    volumes:
-      - grafana_data:/var/lib/grafana
-      - ./docker/grafana/dashboards:/etc/grafana/provisioning/dashboards
-      - ./docker/grafana/datasources:/etc/grafana/provisioning/datasources
-    restart: unless-stopped
-    depends_on:
-      - prometheus
-
-  # Database backup (optional)
-  backup:
-    image: offen/docker-volume-backup:latest
-    container_name: bundler-backup
-    restart: always
-    volumes:
-      - ./backups:/archive
-      - ./data:/data:ro
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-    environment:
-      BACKUP_CRON_EXPRESSION: "0 2 * * *"
-      BACKUP_FILENAME: "bundler-backup-%Y-%m-%dT%H-%M-%S.tar.gz"
-      BACKUP_LATEST_SYMLINK: "bundler-backup-latest.tar.gz"
-      BACKUP_RETENTION_DAYS: 7
-    depends_on:
-      - bundler
-
-volumes:
-  prometheus_data:
-  grafana_data:

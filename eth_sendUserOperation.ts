@@ -54,7 +54,7 @@ export class SendUserOperationMethod {
             
             if (!validation.isValid) {
                 console.error('❌ UserOperation validation failed:', validation.error);
-                this.metrics.recordError('validation_failed', 'SendUserOperationMethod', validation.error);
+                this.metrics.recordUserOpReceived('rejected');
                 
                 throw {
                     code: -32500,
@@ -69,13 +69,20 @@ export class SendUserOperationMethod {
             console.log('📥 Adding to mempool...');
             await this.mempool.add(userOpFormatted, validation.userOpHash!);
             
+            this.metrics.recordUserOpReceived('accepted');
+            this.metrics.recordRpcRequest('eth_sendUserOperation', 'success');
+
             console.log('🎯 UserOperation added to mempool successfully');
             
             return validation.userOpHash;
 
         } catch (error: any) {
             console.error('❌ eth_sendUserOperation error:', error.message || error);
-            this.metrics.recordError('execution_failed', 'SendUserOperationMethod', error.message);
+            
+            this.metrics.recordError('rpc_method_error');
+            this.metrics.recordRpcRequest('eth_sendUserOperation', 'error');
+            
+            // Re-throw the error for the RPC handler
             throw error;
         } finally {
             const duration = Date.now() - startTime;
@@ -83,21 +90,26 @@ export class SendUserOperationMethod {
         }
     }
 
+    /**
+     * Format UserOperation to ensure all fields are properly formatted
+     */
     private formatUserOperation(userOp: any): UserOperation {
+        // Ensure all required fields are present and properly formatted
         const formatted: UserOperation = {
             sender: this.ensureHex(userOp.sender, true).toLowerCase(),
             nonce: this.ensureHex(userOp.nonce),
             initCode: this.ensureHex(userOp.initCode || '0x'),
             callData: this.ensureHex(userOp.callData || '0x'),
-            callGasLimit: this.ensureHex(userOp.callGasLimit || '0xf4240'),
+            callGasLimit: this.ensureHex(userOp.callGasLimit || '0xf4240'), // Default: 1,000,000
             verificationGasLimit: this.ensureHex(userOp.verificationGasLimit || '0xf4240'),
             preVerificationGas: this.ensureHex(userOp.preVerificationGas || '0xf4240'),
-            maxFeePerGas: this.ensureHex(userOp.maxFeePerGas || '0x3b9aca00'),
+            maxFeePerGas: this.ensureHex(userOp.maxFeePerGas || '0x3b9aca00'), // Default: 1 Gwei
             maxPriorityFeePerGas: this.ensureHex(userOp.maxPriorityFeePerGas || '0x3b9aca00'),
             paymasterAndData: this.ensureHex(userOp.paymasterAndData || '0x'),
             signature: this.ensureHex(userOp.signature || '0x')
         };
 
+        // Log formatted UserOperation for debugging
         console.log('📝 Formatted UserOperation:', {
             sender: formatted.sender,
             nonce: formatted.nonce,
@@ -109,26 +121,35 @@ export class SendUserOperationMethod {
         return formatted;
     }
 
+    /**
+     * Ensure a value is properly hex-encoded with 0x prefix
+     */
     private ensureHex(value: any, isAddress: boolean = false): string {
         if (!value && value !== 0) {
             return '0x';
         }
 
+        // Convert to string
         let strValue = String(value);
         
+        // Remove 0x prefix if present
         if (strValue.startsWith('0x')) {
             strValue = strValue.slice(2);
         }
 
+        // Handle special cases
         if (strValue === '' || strValue === '0') {
             return '0x';
         }
 
+        // For addresses, ensure proper length
         if (isAddress) {
+            // Ensure it's 40 characters (20 bytes)
             strValue = strValue.padStart(40, '0').slice(0, 40);
             return `0x${strValue.toLowerCase()}`;
         }
 
+        // For numbers, ensure even length (hex pairs)
         if (strValue.length % 2 !== 0) {
             strValue = '0' + strValue;
         }
@@ -136,6 +157,9 @@ export class SendUserOperationMethod {
         return `0x${strValue.toLowerCase()}`;
     }
 
+    /**
+     * Estimate gas for a UserOperation (optional method, could be in separate file)
+     */
     async estimateGas(params: any[]): Promise<any> {
         try {
             if (params.length < 2) {
@@ -162,8 +186,9 @@ export class SendUserOperationMethod {
         } catch (error: any) {
             console.error('Gas estimation failed:', error);
             
+            // Return safe defaults if estimation fails
             return {
-                preVerificationGas: '0xf4240',
+                preVerificationGas: '0xf4240', // 1,000,000
                 verificationGasLimit: '0xf4240',
                 callGasLimit: '0xf4240'
             };

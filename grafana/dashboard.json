@@ -1,0 +1,25 @@
+{
+  "dashboard": {
+    "title": "Sonic Bundler Dashboard",
+    "panels": [
+      {
+        "title": "UserOperations",
+        "targets": [
+          {
+            "expr": "rate(bundler_userops_received_total[5m])",
+            "legendFormat": "Received"
+          }
+        ]
+      },
+      {
+        "title": "Gas Usage",
+        "targets": [
+          {
+            "expr": "bundler_gas_used",
+            "legendFormat": "Gas Used"
+          }
+        ]
+      }
+    ]
+  }
+}

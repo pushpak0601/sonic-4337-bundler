@@ -14,11 +14,22 @@ export class BlockchainService {
         privateKey: string
     ) {
         this.provider = new ethers.JsonRpcProvider(rpcUrl);
+        
+        // IMPORTANT: Make sure EntryPointABI is the actual ABI array
+        // If EntryPointABI is an object with an 'abi' property, use EntryPointABI.abi
+        const abi = Array.isArray(EntryPointABI) ? EntryPointABI : 
+                   (EntryPointABI as any).abi ? (EntryPointABI as any).abi : [];
+        
+        if (abi.length === 0) {
+            throw new Error('Invalid EntryPoint ABI. Check src/abis/EntryPoint.json');
+        }
+        
         this.entryPointContract = new Contract(
             entryPointAddress,
-            EntryPointABI as any,
+            abi,
             this.provider
         );
+        
         this.signer = new Wallet(privateKey, this.provider);
         this.chainId = 14601; // Sonic Testnet
     }
@@ -29,10 +40,16 @@ export class BlockchainService {
             const entryPointWithSigner = this.entryPointContract.connect(this.signer) as Contract;
             
             // Call simulateValidation - this will revert if validation fails
-            const tx = await entryPointWithSigner.simulateValidation.staticCall(userOp);
-            return { success: true, result: tx };
+            // Note: simulateValidation doesn't return a value on success, it reverts on failure
+            await entryPointWithSigner.simulateValidation.staticCall(userOp);
+            
+            // If we get here, simulation succeeded
+            return { success: true, result: null };
+            
         } catch (error: any) {
             // Parse the error to get validation result
+            console.error('Validation error:', error);
+            
             if (error.data) {
                 try {
                     const decodedError = this.entryPointContract.interface.parseError(error.data);
@@ -41,7 +58,7 @@ export class BlockchainService {
                         error: decodedError?.name || 'Validation failed',
                         data: decodedError?.args 
                     };
-                } catch {
+                } catch (e) {
                     return { success: false, error: error.message };
                 }
             }
@@ -50,11 +67,22 @@ export class BlockchainService {
     }
 
     async getUserOpHash(userOp: UserOperation): Promise<string> {
-        return await this.entryPointContract.getUserOpHash.staticCall(userOp);
+        try {
+            const hash = await this.entryPointContract.getUserOpHash.staticCall(userOp);
+            return hash;
+        } catch (error: any) {
+            console.error('Failed to get UserOp hash:', error);
+            throw new Error(`Failed to compute hash: ${error.message}`);
+        }
     }
 
     async getNonce(sender: string, key: number = 0): Promise<string> {
-        return await this.entryPointContract.getNonce(sender, key);
+        try {
+            return await this.entryPointContract.getNonce(sender, key);
+        } catch (error: any) {
+            console.error('Failed to get nonce:', error);
+            return '0x0'; // Return default if fails
+        }
     }
 
     async handleOps(
@@ -86,8 +114,7 @@ export class BlockchainService {
     }
 
     async waitForTransaction(txHash: string): Promise<ethers.TransactionReceipt | null> {
-      const receipt = await this.provider.waitForTransaction(txHash);
-      return receipt as ethers.TransactionReceipt | null;
+        return await this.provider.waitForTransaction(txHash);
     }
 
     async getTransactionReceipt(txHash: string): Promise<ethers.TransactionReceipt | null> {
@@ -111,41 +138,11 @@ export class BlockchainService {
         verificationGasLimit: string;
         callGasLimit: string;
     }> {
-        // Real gas estimation using the EntryPoint's simulation
-        try {
-            const simulation = await this.simulateValidation(userOp);
-            
-            if (!simulation.success) {
-                // Return safe defaults if simulation fails
-                return {
-                    preVerificationGas: '100000',
-                    verificationGasLimit: '100000',
-                    callGasLimit: '100000'
-                };
-            }
-
-            // In real implementation, you'd parse the simulation result
-            // For now, return reasonable estimates based on operation complexity
-            const callDataLength = ethers.dataLength(userOp.callData);
-            const baseGas = 21000n;
-            const perByteGas = 16n;
-            
-            const preVerificationGas = baseGas + (BigInt(callDataLength) * perByteGas);
-            const verificationGasLimit = preVerificationGas * 2n;
-            const callGasLimit = 100000n; // Default call gas
-
-            return {
-                preVerificationGas: preVerificationGas.toString(),
-                verificationGasLimit: verificationGasLimit.toString(),
-                callGasLimit: callGasLimit.toString()
-            };
-        } catch (error) {
-            console.error('Gas estimation failed:', error);
-            return {
-                preVerificationGas: '100000',
-                verificationGasLimit: '100000',
-                callGasLimit: '100000'
-            };
-        }
+        // Simple estimation for now
+        return {
+            preVerificationGas: '100000',
+            verificationGasLimit: '100000',
+            callGasLimit: '100000'
+        };
     }
 }
